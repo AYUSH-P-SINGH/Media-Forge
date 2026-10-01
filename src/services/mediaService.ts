@@ -22,4 +22,121 @@ export class MediaService {
     const checksum = await storage.calculateChecksum(file.path);
     const thumbnailUrl = await storage.saveThumbnail(id, file.originalname, file.mimetype);
 
-    const initialMetadata: Medi…5•Ñ…‘…Ñ„€ôì(€€€€€¡•­ÍÕµM¡„ÈÔØè¡•­ÍÕ´°(€€€€€½É¥¥¹…±áÑ•¹Í¥½¸èÁ…Ñ ¹•áÑ¹…µ”¡™¥±”¹½É¥¥¹…±¹…µ”¤¹Ñ½1½Ý•É…Í” ¤°(€€€€€•¹½‘¥¹œè™¥±”¹•¹½‘¥¹œ°(€€€€€ÁÉ½•ÍÍ¥¹MÑ…”è€EUUœ°(€€€€€Á¥Á•±¥¹•Y•ÉÍ¥½¸è€ØÄ¸Àµ±½Õµ¹…Ñ¥Ù”œ(€€€ôì((€€€½¹ÍÐµ•‘¥…I•½É€ô…Ý…¥Ð‘ˆ¹¥¹Í•ÉÐ¡ì(€€€€€¥°(€€€€€½É¥¥¹…±9…µ”è™¥±”¹½É¥¥¹…±¹…µ”°(€€€€€™¥±•9…µ”è™¥±”¹™¥±•¹…µ”°(€€€€€µ¥µ•QåÁ”è™¥±”¹µ¥µ•ÑåÁ”°(€€€€€Í¥é•	åÑ•Ìè™¥±”¹Í¥é”°(€€€€€ÍÑ…ÑÕÌè€EUUœ°(€€€€€™¥±•A…Ñ è™¥±”¹Á…Ñ °(€€€€€Ñ¡Õµ‰¹…¥±UÉ°°(€€€€€µ•Ñ…‘…Ñ„è¥¹¥Ñ¥…±5•Ñ…‘…Ñ„(€€€ô¤ì((€€€¥˜€¡½¹™¥œ¹•¹…‰±•5½­AÉ½•ÍÍ¥¹œ¤ì(€€€€€Ñ¡¥Ì¹ÑÉ¥•ÉAÉ½•ÍÍ¥¹A¥Á•±¥¹”¡¥°™¥±”¹µ¥µ•ÑåÁ”¤¹…Ñ ¡•ÉÈ€ôøì(€€€€€€€½¹Í½±”¹•ÉÉ½È¡mAÉ½•ÍÍ¥¹tÉÉ½È¥¸Á¥Á•±¥¹”™½È€‘í¥‘ôé€°•ÉÈ¤ì(€€€€€ô¤ì(€€€ô((€€€É•ÑÕÉ¸µ•‘¥…I•½Éì(€ô(((€…Íå¹ŒÑÉ¥•ÉAÉ½•ÍÍ¥¹A¥Á•±¥¹”¡¥èÍÑÉ¥¹œ°µ¥µ•QåÁ”èÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñ5•‘¥…%Ñ•´ð¹Õ±°øì(€€€…Ý…¥Ð‘ˆ¹ÕÁ‘…Ñ•MÑ…ÑÕÌ¡¥°€AI=MM%9œ°ì(€€€€€ÁÉ½•ÍÍ¥¹MÑ…ÉÑ•‘Ðè¹•Ü…Ñ” ¤¹Ñ½%M=MÑÉ¥¹œ ¤°(€€€€€ÁÉ½•ÍÍ¥¹MÑ…”è€aQIQ%9}5QQœ(€€€ô¤ì((€€€…Ý…¥Ð¹•ÜAÉ½µ¥Í”¡É•Í½±Ù”€ôøÍ•ÑQ¥µ•½ÕÐ¡É•Í½±Ù”°½¹™¥œ¹ÁÉ½•ÍÍ¥¹•±…å5Ì¤¤ì((€€€½¹ÍÐ¥ÍY¥‘•¼€ôµ¥µ•QåÁ”¹ÍÑ…ÉÑÍ]¥Ñ  Ù¥‘•¼œ¤ì(€€€½¹ÍÐ¥Í%µ…”€ôµ¥µ•QåÁ”¹ÍÑ…ÉÑÍ]¥Ñ  ¥µ…”œ¤ì(€€€½¹ÍÐ¥ÍÕ‘¥¼€ôµ¥µ•QåÁ”¹ÍÑ…ÉÑÍ]¥Ñ  …Õ‘¥¼œ¤ì((€€€½¹ÍÐÁÉ½•ÍÍ•‘5•Ñ…‘…Ñ„è5•‘¥…5•Ñ…‘…Ñ„€ôì(€€€€€ÁÉ½•ÍÍ¥¹½µÁ±•Ñ•‘Ðè¹•Ü…Ñ” ¤¹Ñ½%M=MÑÉ¥¹œ ¤°(€€€€€½‘•Œè¥ÍY¥‘•¼€ü€ ¸ÈØÐ€¼œ€è¥ÍÕ‘¥¼€ü€5@Ìœ€è¥Í%µ…”€ü€]•‰@€¼)Aœ€è€I\œ°(€€€€€‘¥µ•¹Í¥½¹Ìè¥ÍY¥‘•¼€ü€œÄäÈÁàÄÀàÀ€¡!¤œ€è¥Í%µ…”€ü€œÄÈàÁàÜÈÀœ€è¹Õ±°°(€€€€€•ÍÑ¥µ…Ñ•‘ÕÉ…Ñ¥½¹M•½¹‘Ìè¥ÍY¥‘•¼€ü€ÐÈ€è¥ÍÕ‘¥¼€ü€ÄàÀ€è¹Õ±°°(€€€€€ÑÉ…¹Í½‘•‘Y•ÉÍ¥½¹Ìèl(€€€€€€€ìÁÉ½™¥±”è€œÜÈÁÁÌ°ÍÑ…ÑÕÌè€Idœ°™½Éµ…Ðè€µÀÐœô°(€€€€€€€ìÁÉ½™¥±”è€œÄÀàÁÀœ°ÍÑ…ÑÕÌè€Idœ°™½Éµ…Ðè€µÀÐœô(€€€€€t°(€€€€€½µÁ±¥…¹•¡•­•èÑÉÕ”°(€€€€€Í•ÕÉ¥ÑåM…¸è€AMM}18œ(€€€ôì((€€€É•ÑÕÉ¸…Ý…¥Ð‘ˆ¹ÕÁ‘…Ñ•MÑ…ÑÕÌ¡¥°€=5A1Qœ°ÁÉ½•ÍÍ•‘5•Ñ…‘…Ñ„¤ì(€ô(((€…Íå¹Œ•Ñ±±5•‘¥„ ¤èAÉ½µ¥Í”ñ5•‘¥…%Ñ•µmtøì(€€€É•ÑÕÉ¸…Ý…¥Ð‘ˆ¹™¥¹‘±° ¤ì(€ô(((€…Íå¹Œ•Ñ5•‘¥…	å%¡¥èÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñ5•‘¥…%Ñ•´ð¹Õ±°øì(€€€É•ÑÕÉ¸…Ý…¥Ð‘ˆ¹™¥¹‘	å%¡¥¤ì(€ô(((€…Íå¹ŒÉ•ÁÉ½•ÍÍ5•‘¥„¡¥èÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñ5•‘¥…%Ñ•´ð¹Õ±°øì(€€€½¹ÍÐ¥Ñ•´€ô…Ý…¥Ð‘ˆ¹™¥¹‘	å%¡¥¤ì(€€€¥˜€ …¥Ñ•´¤Ñ¡É½Ü¹•ÜÉÉ½È 5•‘¥„¥Ñ•´¹½Ð™½Õ¹œ¤ì((€€€…Ý…¥Ð‘ˆ¹ÕÁ‘…Ñ•MÑ…ÑÕÌ¡¥°€AI=MM%9œ°ì(€€€€€É•ÁÉ½•ÍÍ•‘Ðè¹•Ü…Ñ” ¤¹Ñ½%M=MÑÉ¥¹œ ¤(€€€ô¤ì((€€€Ñ¡¥Ì¹ÑÉ¥•ÉAÉ½•ÍÍ¥¹A¥Á•±¥¹”¡¥°¥Ñ•´¹µ¥µ•}ÑåÁ”¤¹…Ñ ¡½¹Í½±”¹•ÉÉ½È¤ì((€€€É•ÑÕÉ¸…Ý…¥Ð‘ˆ¹™¥¹‘	å%¡¥¤ì(€ô(((€…Íå¹Œ‘•±•Ñ•5•‘¥„¡¥èÍÑÉ¥¹œ¤èAÉ½µ¥Í”ñ5•‘¥…%Ñ•´ð¹Õ±°øì(€€€½¹ÍÐ¥Ñ•´€ô…Ý…¥Ð‘ˆ¹™¥¹‘	å%¡¥¤ì(€€€¥˜€ …¥Ñ•´¤É•ÑÕÉ¸¹Õ±°ì((€€€¥˜€¡¥Ñ•´¹™¥±•}Á…Ñ ¤ì(€€€€€…Ý…¥ÐÍÑ½É…”¹‘•±•Ñ•¥±”¡¥Ñ•´¹™¥±•}Á…Ñ ¤ì(€€€ô(€€€É•ÑÕÉ¸…Ý…¥Ð‘ˆ¹‘•±•Ñ”¡¥¤ì(€ô)ô()•áÁ½ÉÐ½¹ÍÐµ•‘¥…M•ÉÙ¥”€ô¹•Ü5•‘¥…M•ÉÙ¥” ¤ì)•áÁ½ÉÐ‘•™…Õ±Ðµ•‘¥…M•ÉÙ¥”ì(
+    const initialMetadata: MediaMetadata = {
+      checksumSha256: checksum,
+      originalExtension: path.extname(file.originalname).toLowerCase(),
+      encoding: file.encoding,
+      processingStage: 'INGESTED',
+      pipelineVersion: '1.0.0',
+    };
+
+    const item = await db.insert({
+      id,
+      originalName: file.originalname,
+      fileName: file.filename,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+      status: 'QUEUED',
+      filePath: file.path,
+      thumbnailUrl,
+      metadata: initialMetadata,
+    });
+
+    if (config.enableMockProcessing) {
+      this.simulateProcessing(id).catch((err: any) =>
+        console.error(`[MediaService] Processing error for ${id}:`, err.message)
+      );
+    }
+
+    return item;
+  }
+
+  private async simulateProcessing(id: string): Promise<void> {
+    await db.updateStatus(id, 'PROCESSING', {
+      processingStage: 'TRANSCODING',
+      processingStartedAt: new Date().toISOString(),
+    });
+
+    await this.delay(config.processingDelayMs);
+
+    try {
+      const mediaType = (await db.findById(id))?.mime_type || '';
+      const isVideo = mediaType.startsWith('video');
+      const isAudio = mediaType.startsWith('audio');
+      const isImage = mediaType.startsWith('image');
+
+      const codec = isVideo ? 'H.264/AAC' : isAudio ? 'AAC' : isImage ? 'WebP' : 'N/A';
+      const dimensions = isVideo ? '1920x1080' : isImage ? '1024x768' : null;
+      const estimatedDurationSeconds = isVideo ? 42.5 : isAudio ? 180.0 : null;
+
+      const transcodedVersions = isVideo
+        ? [
+            { profile: '720p', status: 'READY' as const, format: 'mp4' },
+            { profile: '480p', status: 'READY' as const, format: 'mp4' },
+          ]
+        : isAudio
+        ? [{ profile: 'standard', status: 'READY' as const, format: 'aac' }]
+        : [];
+
+      await db.updateStatus(id, 'COMPLETED', {
+        processingStage: 'COMPLETED',
+        processingCompletedAt: new Date().toISOString(),
+        codec,
+        dimensions,
+        estimatedDurationSeconds,
+        transcodedVersions,
+        complianceChecked: true,
+        securityScan: 'PASSED',
+      });
+    } catch (err: any) {
+      await db.updateStatus(id, 'FAILED', {
+        processingStage: 'FAILED',
+        processingCompletedAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  async getAllMedia(): Promise<MediaItem[]> {
+    return db.findAll();
+  }
+
+  async getMediaById(id: string): Promise<MediaItem | null> {
+    return db.findById(id);
+  }
+
+  async reprocessMedia(id: string): Promise<MediaItem | null> {
+    const item = await db.findById(id);
+    if (!item) throw new Error(`Media ${id} not found.`);
+
+    await db.updateStatus(id, 'QUEUED', {
+      reprocessedAt: new Date().toISOString(),
+    });
+
+    if (config.enableMockProcessing) {
+      this.simulateProcessing(id).catch((err: any) =>
+        console.error(`[MediaService] Reprocess error for ${id}:`, err.message)
+      );
+    }
+
+    return db.findById(id);
+  }
+
+  async deleteMedia(id: string): Promise<MediaItem | null> {
+    const item = await db.findById(id);
+    if (!item) return null;
+
+    await storage.deleteFile(item.file_path);
+
+    const thumbPath = path.join(storage.storageDir, 'thumbnails', `${id}.svg`);
+    await storage.deleteFile(thumbPath);
+
+    return db.delete(id);
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+}
+
+export const mediaService = new MediaService();
+export default mediaService;

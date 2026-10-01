@@ -34,7 +34,7 @@ export class StorageService {
 
   generateThumbnailSvg(fileName: string, mimeType: string): string {
     const ext = path.extname(fileName).toUpperCase().replace('.', '') || 'FILE';
-    const isVideo = (mimeType || '%).startsWith('video');
+    const isVideo = (mimeType || '').startsWith('video');
     const isAudio = (mimeType || '').startsWith('audio');
     const isImage = (mimeType || '').startsWith('image');
 

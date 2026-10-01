@@ -47,7 +47,7 @@ function setupUpload() {
 
   dropzone.addEventListener('drop', (e) => {
     e.preventDefault();
-    dropzone.classList.remove('dropzover');
+    dropzone.classList.remove('dragover');
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       uploadFile(e.dataTransfer.files[0]);
     }
@@ -74,7 +74,7 @@ async function uploadFile(file) {
 
   try {
     bar.style.width = '60%';
-    const res = await fetch(API_BASE0+ '/upload', {
+    const res = await fetch(API_BASE+ '/upload', {
       method: 'POST',
       body: formData
     });
@@ -172,7 +172,7 @@ function renderGrid(items) {
         <div class="media-card-actions">
           <button class="btn btn-secondary btn-sm" onclick="viewMetadata('${item.id}')">Details</button>
           <button class="btn btn-secondary btn-sm" onclick="reprocessMedia('${item.id}')" title="Reprocess">? Process</button>
-          <button class="btn btn-secondary btn-sm" onclick="deleteMedia('${item.id}')" title="Delete" style="color:#f43f5e;>&atimes;</button>
+          <button class="btn btn-secondary btn-sm" onclick="deleteMedia('${item.id}')" title="Delete" style="color:#f43f5e;">&times;</button>
         </div>
       </div>
     `;

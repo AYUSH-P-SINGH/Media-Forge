@@ -22,7 +22,7 @@ const upload = multer({
   limits: { fileSize: config.maxFileSizeMb * 1024 * 1024 }
 });
 
-router.post(/upload', upload.single('file'), (req, res, next) => mediaController.upload(req, res, next));
+router.post('/upload', upload.single('file'), (req, res, next) => mediaController.upload(req, res, next));
 router.get('/', (req, res, next) => mediaController.list(req, res, next));
 router.get('/:id', (req, res, next) => mediaController.getById(req, res, next));
 router.post('/:id/process', (req, res, next) => mediaController.process(req, res, next));

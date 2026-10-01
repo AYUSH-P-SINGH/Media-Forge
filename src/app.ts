@@ -11,7 +11,9 @@ export function createApp(): Application {
   const app = express();
 
   // Initialize DB asynchronously
-  db.initialize(config.databaseUrl);
+  db.initialize(config.databaseUrl).catch((err: any) => {
+    console.warn('[App] DB init warning:', err.message);
+  });
 
   // Core Middlewares
   app.use(cors());

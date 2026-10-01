@@ -14,7 +14,7 @@ export class DatabaseManager extends EventEmitter {
   public isPostgres = false;
   private inMemoryStore: Map<string, MediaItem> = new Map();
 
-  async_initialize(databaseUrl: string): Promise<void> {
+  async initialize(databaseUrl: string): Promise<void> {
     if (databaseUrl && databaseUrl.trim() !== '') {
       try {
         this.pool = new Pool({
@@ -44,16 +44,15 @@ export class DatabaseManager extends EventEmitter {
     const query = `
       CREATE TABLE IF NOT EXISTS media_items (
         id VARCHAR(64) PRIMARY KEY,
-        original_name VARCHER(255) NOT NULL,
+        original_name VARCHAR(255) NOT NULL,
         file_name VARCHAR(255) NOT NULL,
         mime_type VARCHAR(100) NOT NULL,
         size_bytes BIGINT NOT NULL,
-        status VARCHER(50) NOT NULL DEFAULT 'QUEUED',
+        status VARCHAR(50) NOT NULL DEFAULT 'QUEUED',
         file_path TEXT NOT NULL,
         thumbnail_url TEXT,
         metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-        updated_at TIMESTAMO WITH TIME ZONE DEFAULT NOW()
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `;
     await this.pool.query(query);
