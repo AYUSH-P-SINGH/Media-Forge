@@ -1,0 +1,59 @@
+﻿version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mediaforge-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://mediaforge:mediaforge123@db:5432/mediaforge
+      - STORAGE_DIR=/app/uploads
+      - ENABLE_MOCK_PROCESSING=true
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - media_uploads:/app/uploads
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+
+  db:
+    image: postgres:16-alpine
+    container_name: mediaforge-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mediaforge
+      POSTGRES_PASSWORD: mediaforge123
+      POSTGRES_DB: mediaforge
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediaforge -d mediaforge"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  media_uploads:
+    name: mediaforge_uploads
+  postgres_data:
+    name: mediaforge_postgres_data

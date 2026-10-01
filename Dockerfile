@@ -1,0 +1,49 @@
+# Multi-stage TypeScript build adhering to non-root container security principles
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install all dependencies for TypeScript compilation
+COPY package*.json tsconfig.json ./
+RUN npm install --ignore-scripts
+
+# Copy TypeScript source
+COPY src/ ./src/
+
+# Compile TypeScript to JavaScript in /app/dist
+RUN npm run build
+
+# Production runtime stage
+FROM node:20-alpine AS runner
+
+# Install curl for container health check probe
+RUN apk add --no-cache curl
+
+WORKDIR /app
+
+# Install production dependencies only
+COPY package*.json ./
+RUN npm install --omit=dev --ignore-scripts
+
+# Copy compiled JavaScript output and frontend dashboard assets
+COPY --from=builder /app/dist ./dist
+COPY public/ ./public/
+
+# Configure non-root user and persistent storage directory
+RUN mkdir -p /app/uploads && \
+    addgroup -g 10001 appgroup && \
+    adduser -u 10001 -G appgroup -s /bin/sh -D appuser && \
+    chown -R appuser:appgroup /app
+
+USER appuser
+
+EXPOSE 5000
+
+ENV PORT=5000 \
+    NODE_ENV=production \
+    STORAGE_DIR=/app/uploads
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:5000/healthz || exit 1
+
+CMD ["node", "dist/server.js"]

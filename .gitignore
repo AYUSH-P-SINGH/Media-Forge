@@ -1,0 +1,27 @@
+﻿# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+.env.local
+
+# Storage and uploads
+uploads/*
+!uploads/.gitkeep
+thumbs/
+processed/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Coverage
+coverage/
