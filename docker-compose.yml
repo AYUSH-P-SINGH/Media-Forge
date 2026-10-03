@@ -1,5 +1,3 @@
-﻿version: '3.8'
-
 services:
   app:
     build:
@@ -14,12 +12,20 @@ services:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://mediaforge:mediaforge123@db:5432/mediaforge
       - STORAGE_DIR=/app/uploads
+      - MAX_FILE_SIZE_MB=50
       - ENABLE_MOCK_PROCESSING=true
+      - PROCESSING_DELAY_MS=2000
     depends_on:
       db:
         condition: service_healthy
     volumes:
       - media_uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/healthz"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     deploy:
       resources:
         limits:
