@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mediaforge-uploads-pvc
+  namespace: mediaforge
+  labels:
+    app.kubernetes.io/name: mediaforge
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mediaforge-db-pvc
+  namespace: mediaforge
+  labels:
+    app.kubernetes.io/name: mediaforge
+    app.kubernetes.io/component: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
