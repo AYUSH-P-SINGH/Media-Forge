@@ -65,11 +65,16 @@ export class MediaController {
 
   async process(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await mediaService.reprocessMedia(req.params.id);
+      const item = await mediaService.getMediaById(req.params.id);
+      if (!item) {
+        res.status(404).json({ success: false, error: 'Media not found' });
+        return;
+      }
+      const result = await mediaService.reprocessMedia(req.params.id);
       res.json({
         success: true,
         message: `Processing re-triggered for media ${req.params.id}`,
-        data: item
+        data: result
       });
     } catch (err) {
       next(err);

@@ -17,12 +17,40 @@ const storage = multer.diskStorage({
   }
 });
 
+const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  if (config.allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`File type '${file.mimetype}' is not supported. Allowed: ${config.allowedMimeTypes.join(', ')}`));
+  }
+};
+
 const upload = multer({
   storage,
-  limits: { fileSize: config.maxFileSizeMb * 1024 * 1024 }
+  limits: { fileSize: config.maxFileSizeMb * 1024 * 1024 },
+  fileFilter
 });
 
-router.post('/upload', upload.single('file'), (req, res, next) => mediaController.upload(req, res, next));
+// Upload route with multer error handling
+router.post('/upload', (req, res, next) => {
+  upload.single('file')(req, res, (err: any) => {
+    if (err instanceof multer.MulterError) {
+      // Multer-specific errors (e.g., file too large)
+      return res.status(400).json({
+        success: false,
+        error: err.code === 'LIMIT_FILE_SIZE'
+          ? `File exceeds the ${config.maxFileSizeMb}MB size limit.`
+          : err.message
+      });
+    }
+    if (err) {
+      // Custom file filter errors
+      return res.status(400).json({ success: false, error: err.message });
+    }
+    mediaController.upload(req, res, next);
+  });
+});
+
 router.get('/', (req, res, next) => mediaController.list(req, res, next));
 router.get('/:id', (req, res, next) => mediaController.getById(req, res, next));
 router.post('/:id/process', (req, res, next) => mediaController.process(req, res, next));

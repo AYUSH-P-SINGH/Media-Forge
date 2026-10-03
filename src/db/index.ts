@@ -52,7 +52,8 @@ export class DatabaseManager extends EventEmitter {
         file_path TEXT NOT NULL,
         thumbnail_url TEXT,
         metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
     `;
     await this.pool.query(query);

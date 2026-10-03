@@ -171,7 +171,7 @@ function renderGrid(items) {
         </div>
         <div class="media-card-actions">
           <button class="btn btn-secondary btn-sm" onclick="viewMetadata('${item.id}')">Details</button>
-          <button class="btn btn-secondary btn-sm" onclick="reprocessMedia('${item.id}')" title="Reprocess">? Process</button>
+          <button class="btn btn-secondary btn-sm" onclick="reprocessMedia('${item.id}')" title="Reprocess">&#x21bb; Reprocess</button>
           <button class="btn btn-secondary btn-sm" onclick="deleteMedia('${item.id}')" title="Delete" style="color:#f43f5e;">&times;</button>
         </div>
       </div>

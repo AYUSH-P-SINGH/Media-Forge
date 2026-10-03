@@ -13,7 +13,11 @@
   <div class="app-layout">
     <header class="app-header">
       <div class="brand">
-        <div class="logo-icon">❤</div>
+        <div class="logo-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
         <div>
           <h1>MediaForge</h1>
           <p class="subtitle">Cloud-Native Media Platform &bull; Kubernetes DevSecOps</p>
@@ -59,7 +63,13 @@
       <!-- Upload Section -->
       <section class="upload-section">
         <div class="dropzone" id="dropzone">
-          <div class="drop-icon">⬧️</div>
+          <div class="drop-icon">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
           <h3>Upload Media Assets</h3>
           <p>Drag and drop your video, audio, image, or document here, or browse files</p>
           <div class="formats-supported">
@@ -127,7 +137,7 @@
       <p>MediaForge &bull; Kubernetes DevSecOps Media Platform &bull; Built with TypeScript & Node.js</p>
       <div class="footer-links">
         <a href="/healthz" target="_blank">Liveness Probe (/healthz)</a>
-        <a hrf="/readyz" target="_blank">Readiness Probe (/readyz)</a>
+        <a href="/readyz" target="_blank">Readiness Probe (/readyz)</a>
         <a href="/metrics" target="_blank">Prometheus Metrics (/metrics)</a>
       </div>
     </footer>

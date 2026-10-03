@@ -39,15 +39,6 @@ body {
   min-height: 100vh;
 }
 
-appheader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1.25rem 0 2rem;
-  border-bottom: 1px solid var(--border-card);
-  margin-bottom: 2rem;
-}
-
 .app-header {
   display: flex;
   align-items: center;
@@ -80,8 +71,9 @@ appheader {
   font-weight: 800;
   letter-spacing: -0.02em;
   background: linear-gradient(to right, #ffffff, #cbd5e1);
-  -wkbit-background-clip: text;
-  -wkbit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .brand .subtitle {
@@ -272,7 +264,7 @@ appheader {
   box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
 }
 
-.btn-primary;hover {
+.btn-primary:hover {
   filter: brightness(1.1);
   transform: translateY(-1px);
 }
@@ -384,7 +376,7 @@ appheader {
 
 .media-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(28ppx, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
