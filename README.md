@@ -232,22 +232,118 @@ kubectl rollout undo deployment/mediaforge-app -n mediaforge
 
 ---
 
-## CI/CD
+## CI/CD & DevSecOps (Phase 4)
 
-GitHub Actions will automate the software delivery lifecycle.
+MediaForge features a comprehensive, multi-stage DevSecOps pipeline implemented in GitHub Actions ([`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml)). Every code change undergoes rigorous quality checks, static analysis, secret detection, vulnerability scanning, SBOM generation, container publishing to GHCR, and cryptographic signing with Cosign.
 
-The pipeline will progressively include:
+### Pipeline Architecture
 
-* Automated testing
-* Static analysis
-* Secret scanning
-* Docker image building
-* Container vulnerability scanning
-* SBOM generation
-* Container image signing
-* Publishing images to GHCR
+```text
+  ┌─────────────────────────────────────────────────────────────┐
+  │                    GitHub Actions CI/CD                     │
+  └──────────────────────────────┬──────────────────────────────┘
+                                 │
+         ┌───────────────────────┼──────────────────────┐
+         ▼                       ▼                      ▼
+┌──────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+│  Automated Tests │   │ Secret Scanning  │   │     SAST Scan    │
+│  TypeCheck+Build │   │  (Gitleaks v8)   │   │ (Semgrep OWASP)  │
+│ Smoke+Integration│   │ Commit History   │   │  SARIF CodeScan  │
+└────────┬─────────┘   └────────┬─────────┘   └────────┬─────────┘
+         │                      │                      │
+         └──────────────────────┼──────────────────────┘
+                                │
+                                ▼
+                       ┌──────────────────┐
+                       │ Trivy FS Scan    │
+                       │ Dependencies CVE │
+                       └────────┬─────────┘
+                                │
+                                ▼
+                       ┌──────────────────┐
+                       │  Docker Buildx   │
+                       │ Non-root Alpine  │
+                       └────────┬─────────┘
+                                │
+         ┌──────────────────────┴──────────────────────┐
+         ▼                                             ▼
+┌──────────────────┐                         ┌──────────────────┐
+│  Trivy Container │                         │  Syft SBOM Gen   │
+│ OS & Lib CVEs    │                         │ CycloneDX + SPDX │
+│ SARIF CodeScan   │                         │  JSON Artifacts  │
+└────────┬─────────┘                         └────────┬─────────┘
+         │                                             │
+         └──────────────────────┬──────────────────────┘
+                                │ (On push to main / tag)
+                                ▼
+                       ┌──────────────────┐
+                       │   GHCR Registry  │
+                       │ Publish OCI Image│
+                       └────────┬─────────┘
+                                │
+         ┌──────────────────────┴──────────────────────┐
+         ▼                                             ▼
+┌──────────────────┐                         ┌──────────────────┐
+│  Cosign Signing  │                         │ Cosign SBOM      │
+│  Keyless OIDC    │                         │ In-toto          │
+│  Sigstore Rekor  │                         │ Attestation      │
+└────────┬─────────┘                         └────────┬─────────┘
+         │                                             │
+         └──────────────────────┬──────────────────────┘
+                                │
+                                ▼
+                       ┌──────────────────┐
+                       │ Cryptographic    │
+                       │ Verification     │
+                       └──────────────────┘
+```
 
-The goal is to establish a secure and repeatable path from source code to Kubernetes deployment.
+### Security Layers & Tooling
+
+| Stage | Technology | Focus & Standards |
+|---|---|---|
+| **Automated Tests** | TypeScript / `tsx` | Strict typecheck (`tsc --noEmit`), build check, smoke test & HTTP integration suite |
+| **Secret Scanning** | **Gitleaks** v8 | Scans complete Git history and PR diffs against custom [`.gitleaks.toml`](.gitleaks.toml) baseline |
+| **SAST** | **Semgrep** | Scans for OWASP Top 10 vulnerabilities, code smells, and unsafe patterns. Generates SARIF |
+| **Vulnerability Scanning** | **Aqua Trivy** | Scans filesystem packages and multi-stage container image for HIGH and CRITICAL CVEs |
+| **SBOM Generation** | **Syft** (Anchore) | Generates industry-standard CycloneDX (`cyclonedx-json`) and SPDX (`spdx-json`) bill of materials |
+| **Container Registry** | **GHCR** | Publishes OCI container images with semantic version, branch, and commit SHA tags to `ghcr.io` |
+| **Cryptographic Signing** | **Sigstore Cosign** | Keyless container signing using GitHub Actions OIDC; verifies provenance against Sigstore transparency log |
+| **SBOM Attestation** | **Cosign Attest** | Cryptographically links the generated SPDX SBOM directly to the container image digest in GHCR |
+
+### Pulling and Verifying MediaForge Container Images
+
+MediaForge container images published to GHCR can be independently verified by any auditor or Kubernetes cluster admission controller:
+
+```bash
+# 1. Pull the container image from GitHub Container Registry
+docker pull ghcr.io/<your-username>/media-forge:latest
+
+# 2. Cryptographically verify the image signature using Cosign (Keyless)
+cosign verify ghcr.io/<your-username>/media-forge:latest \
+  --certificate-identity-regexp "(?i)^https://github.com/<your-username>/media-forge/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+
+# 3. Cryptographically verify the attached SBOM attestation
+cosign verify-attestation --type spdxjson ghcr.io/<your-username>/media-forge:latest \
+  --certificate-identity-regexp "(?i)^https://github.com/<your-username>/media-forge/" \
+  --certificate-oidc-issuer "https://token.actions.githubusercontent.com"
+```
+
+### Local DevSecOps Execution
+
+You can run the same test and validation steps locally:
+
+```bash
+# Run complete test and build validation
+npm run ci
+
+# Run smoke tests
+npm run test:smoke
+
+# Run end-to-end integration tests
+npm run test:integration
+```
 
 ---
 
@@ -472,14 +568,14 @@ Cloud deployment is optional; the core project can be developed and demonstrated
 
 ### Phase 4 — CI/CD
 
-- [ ] GitHub Actions
-- [ ] Automated tests
-- [ ] SAST
-- [ ] Gitleaks
-- [ ] Trivy
-- [ ] SBOM
-- [ ] GHCR
-- [ ] Cosign
+- [x] GitHub Actions (Multi-stage DevSecOps workflow)
+- [x] Automated tests (TypeScript typecheck, build validation, smoke & integration suites)
+- [x] SAST (Semgrep scanning OWASP Top 10, Security Audit, with SARIF upload)
+- [x] Gitleaks (Git commit history secret detection with custom baseline config)
+- [x] Trivy (Filesystem dependency scanning & container vulnerability scanning)
+- [x] SBOM (Syft generating CycloneDX & SPDX JSON bill-of-materials)
+- [x] GHCR (Automated container publishing to GitHub Container Registry)
+- [x] Cosign (Sigstore keyless OIDC container signing & SBOM attestation)
 
 ### Phase 5 — GitOps
 

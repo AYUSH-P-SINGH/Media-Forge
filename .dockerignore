@@ -2,9 +2,14 @@
 node_modules
 npm-debug.log
 
-# Version control
+# Version control & CI/CD
 .git
 .gitignore
+.github
+k8s
+.gitleaks.toml
+.semgrepignore
+trivy.yaml
 
 # Environment
 .env

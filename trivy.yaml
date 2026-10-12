@@ -1,0 +1,9 @@
+# Trivy Configuration for MediaForge DevSecOps Pipeline
+format: table
+severity:
+  - HIGH
+  - CRITICAL
+ignore-unfixed: true
+vuln-type:
+  - os
+  - library

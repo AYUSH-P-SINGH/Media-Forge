@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "tsx tests/smoke.test.ts && tsx tests/integration.test.ts",
     "test:smoke": "tsx tests/smoke.test.ts",
-    "test:integration": "tsx tests/integration.test.ts"
+    "test:integration": "tsx tests/integration.test.ts",
+    "ci": "npm run typecheck && npm run build && npm test"
   },
   "keywords": [
     "media-processing",
@@ -31,7 +32,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "pg": "^8.11.5",
-    "uuid": "^9.0.1"
+    "uuid": "^11.1.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

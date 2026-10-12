@@ -1,0 +1,7 @@
+# Semgrep scan exclusions
+node_modules/
+dist/
+uploads/
+coverage/
+*.log
+package-lock.json

@@ -5,7 +5,7 @@ WORKDIR /app
 
 # Install all dependencies for TypeScript compilation
 COPY package*.json tsconfig.json ./
-RUN npm install --ignore-scripts
+RUN npm ci --ignore-scripts
 
 # Copy TypeScript source
 COPY src/ ./src/
@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Install production dependencies only
 COPY package*.json ./
-RUN npm install --omit=dev --ignore-scripts
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 
 # Copy compiled JavaScript output and frontend dashboard assets
 COPY --from=builder /app/dist ./dist

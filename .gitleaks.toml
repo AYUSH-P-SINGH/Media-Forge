@@ -1,0 +1,15 @@
+# Gitleaks Configuration for MediaForge DevSecOps Pipeline
+title = "MediaForge Gitleaks Baseline Configuration"
+
+[allowlist]
+description = "Allowlist test fixtures, configuration examples, and documentation secrets"
+paths = [
+  '''^\.env\.example$''',
+  '''^k8s/secret\.yaml$''',
+  '''^docker-compose\.ya?ml$''',
+  '''^tests/.*''',
+]
+regexes = [
+  '''mediaforge_prod_secret_123''',
+  '''mediaforge123''',
+]
