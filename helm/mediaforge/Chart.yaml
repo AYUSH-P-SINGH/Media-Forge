@@ -1,0 +1,14 @@
+apiVersion: v2
+name: mediaforge
+description: MediaForge Cloud-Native Media Processing Platform Helm Chart
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - mediaforge
+  - media-processing
+  - devsecops
+  - kubernetes
+maintainers:
+  - name: AYUSH PRATAP SINGH
+    email: ayushpratapsingh99990@gmail.com

@@ -1,0 +1,90 @@
+# Default values for mediaforge.
+replicaCount: 2
+
+image:
+  repository: ghcr.io/ayush-p-singh/media-forge
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "5000"
+  prometheus.io/path: "/metrics"
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+service:
+  type: ClusterIP
+  port: 5000
+  nodePort: 30500
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  hosts:
+    - host: mediaforge.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 75
+  targetMemoryUtilizationPercentage: 80
+
+persistence:
+  enabled: true
+  storageClassName: "standard"
+  accessMode: ReadWriteOnce
+  size: 10Gi
+
+env:
+  NODE_ENV: "production"
+  PORT: "5000"
+  MAX_FILE_SIZE_MB: "50"
+  ENABLE_MOCK_PROCESSING: "false"
+  PROCESSING_DELAY_MS: "1000"
+
+postgresql:
+  enabled: true
+  user: "mediaforge"
+  password: "mediaforge_prod_secret_123"
+  database: "mediaforge"
+  port: 5432
+  storageSize: 5Gi

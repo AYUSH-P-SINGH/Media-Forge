@@ -579,7 +579,7 @@ Cloud deployment is optional; the core project can be developed and demonstrated
 
 ### Phase 5 — GitOps
 
-- [ ] Helm
+- [x] Helm (Production-ready MediaForge Helm 3/4 chart in `helm/mediaforge`)
 - [ ] Argo CD
 - [ ] Automated synchronization
 - [ ] Deployment rollback

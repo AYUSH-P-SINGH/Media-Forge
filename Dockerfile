@@ -16,8 +16,8 @@ RUN npm run build
 # Production runtime stage
 FROM node:20-alpine AS runner
 
-# Install curl for container health check probe
-RUN apk add --no-cache curl
+# Install curl for container health check probe and ffmpeg for media transcoding
+RUN apk add --no-cache curl ffmpeg
 
 WORKDIR /app
 
@@ -29,8 +29,8 @@ RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
 COPY --from=builder /app/dist ./dist
 COPY public/ ./public/
 
-# Configure non-root user and persistent storage directory
-RUN mkdir -p /app/uploads && \
+# Configure non-root user and persistent storage directory with separated subfolders
+RUN mkdir -p /app/uploads/originals /app/uploads/processed /app/uploads/thumbnails && \
     addgroup -g 10001 appgroup && \
     adduser -u 10001 -G appgroup -s /bin/sh -D appuser && \
     chown -R appuser:appgroup /app
