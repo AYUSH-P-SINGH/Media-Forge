@@ -28,7 +28,8 @@ export function createApp(): Application {
   // Health and Observability
   app.use('/', healthRoutes);
 
-  // Media API Routes
+  // Media API Routes (supports both /api/media and /api/v1/media)
+  app.use('/api/media', mediaRoutes);
   app.use('/api/v1/media', mediaRoutes);
 
   // 404 Handler

@@ -20,7 +20,7 @@ export class DatabaseManager extends EventEmitter {
         this.pool = new Pool({
           connectionString: databaseUrl,
           connectionTimeoutMillis: 3000,
-          idleTimeoutMillis: 10000
+          idleTimeoutMillis: 10000,
         });
 
         const client = await this.pool.connect();
@@ -45,75 +45,99 @@ export class DatabaseManager extends EventEmitter {
       CREATE TABLE IF NOT EXISTS media_items (
         id VARCHAR(64) PRIMARY KEY,
         original_name VARCHAR(255) NOT NULL,
+        storage_key TEXT DEFAULT '',
+        content_type VARCHAR(100) NOT NULL,
+        file_size BIGINT NOT NULL,
+        status VARCHAR(50) NOT NULL DEFAULT 'QUEUED',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         file_name VARCHAR(255) NOT NULL,
         mime_type VARCHAR(100) NOT NULL,
         size_bytes BIGINT NOT NULL,
-        status VARCHAR(50) NOT NULL DEFAULT 'QUEUED',
         file_path TEXT NOT NULL,
         thumbnail_url TEXT,
         metadata JSONB DEFAULT '{}',
-        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
       );
+      ALTER TABLE media_items ADD COLUMN IF NOT EXISTS storage_key TEXT DEFAULT '';
+      ALTER TABLE media_items ADD COLUMN IF NOT EXISTS content_type VARCHAR(100) DEFAULT '';
+      ALTER TABLE media_items ADD COLUMN IF NOT EXISTS file_size BIGINT DEFAULT 0;
     `;
     await this.pool.query(query);
   }
 
-
   async insert(item: CreateMediaDTO): Promise<MediaItem> {
     const now = new Date().toISOString();
+    const storageKey = item.storageKey || item.filePath;
+    const contentType = item.mimeType;
+    const fileSize = item.sizeBytes;
+
     const record: MediaItem = {
       id: item.id,
       original_name: item.originalName,
+      storage_key: storageKey,
+      content_type: contentType,
+      file_size: fileSize,
+      status: item.status || 'QUEUED',
+      created_at: now,
       file_name: item.fileName,
       mime_type: item.mimeType,
       size_bytes: item.sizeBytes,
-      status: item.status || 'QUEUED',
       file_path: item.filePath,
       thumbnail_url: item.thumbnailUrl || null,
       metadata: item.metadata || {},
-      created_at: now,
-      updated_at: now
+      updated_at: now,
     };
 
     if (this.isPostgres && this.pool) {
       const sql = `
-        INSERT INTO media_items (id, original_name, file_name, mime_type, size_bytes, status, file_path, thumbnail_url, metadata, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        INSERT INTO media_items (
+          id, original_name, storage_key, content_type, file_size,
+          status, created_at, file_name, mime_type, size_bytes,
+          file_path, thumbnail_url, metadata, updated_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *;
       `;
-      const res: QueryResult<MediaItem> = await this.pool.query(sql, [
-        record.id, record.original_name, record.file_name, record.mime_type,
-        record.size_bytes, record.status, record.file_path, record.thumbnail_url,
-        JSON.stringify(record.metadata), record.created_at, record.updated_at
+      const res: QueryResult<any> = await this.pool.query(sql, [
+        record.id,
+        record.original_name,
+        record.storage_key,
+        record.content_type,
+        record.file_size,
+        record.status,
+        record.created_at,
+        record.file_name,
+        record.mime_type,
+        record.size_bytes,
+        record.file_path,
+        record.thumbnail_url,
+        JSON.stringify(record.metadata),
+        record.updated_at,
       ]);
-      return res.rows[0];
+      return this.normalizeRecord(res.rows[0]);
     } else {
       this.inMemoryStore.set(record.id, record);
       return { ...record };
     }
   }
 
-
   async findAll(): Promise<MediaItem[]> {
     if (this.isPostgres && this.pool) {
-      const res: QueryResult<MediaItem> = await this.pool.query('SELECT * FROM media_items ORDER BY created_at DESC');
-      return res.rows;
+      const res: QueryResult<any> = await this.pool.query('SELECT * FROM media_items ORDER BY created_at DESC');
+      return res.rows.map(row => this.normalizeRecord(row));
     }
     return Array.from(this.inMemoryStore.values()).sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }
 
-
   async findById(id: string): Promise<MediaItem | null> {
     if (this.isPostgres && this.pool) {
-      const res: QueryResult<MediaItem> = await this.pool.query('SELECT * FROM media_items WHERE id = $1', [id]);
-      return res.rows[0] || null;
+      const res: QueryResult<any> = await this.pool.query('SELECT * FROM media_items WHERE id = $1', [id]);
+      return res.rows[0] ? this.normalizeRecord(res.rows[0]) : null;
     }
     return this.inMemoryStore.get(id) || null;
   }
-
 
   async updateStatus(id: string, status: MediaStatus, metadata: Partial<MediaMetadata> = {}): Promise<MediaItem | null> {
     const now = new Date().toISOString();
@@ -124,8 +148,8 @@ export class DatabaseManager extends EventEmitter {
         WHERE id = $4
         RETURNING *;
       `;
-      const res: QueryResult<MediaItem> = await this.pool.query(sql, [status, JSON.stringify(metadata), now, id]);
-      return res.rows[0] || null;
+      const res: QueryResult<any> = await this.pool.query(sql, [status, JSON.stringify(metadata), now, id]);
+      return res.rows[0] ? this.normalizeRecord(res.rows[0]) : null;
     }
     const item = this.inMemoryStore.get(id);
     if (!item) return null;
@@ -135,11 +159,10 @@ export class DatabaseManager extends EventEmitter {
     return { ...item };
   }
 
-
   async delete(id: string): Promise<MediaItem | null> {
     if (this.isPostgres && this.pool) {
-      const res: QueryResult<MediaItem> = await this.pool.query('DELETE FROM media_items WHERE id = $1 RETURNING *', [id]);
-      return res.rows[0] || null;
+      const res: QueryResult<any> = await this.pool.query('DELETE FROM media_items WHERE id = $1 RETURNING *', [id]);
+      return res.rows[0] ? this.normalizeRecord(res.rows[0]) : null;
     }
     const item = this.inMemoryStore.get(id);
     if (item) {
@@ -148,7 +171,6 @@ export class DatabaseManager extends EventEmitter {
     }
     return null;
   }
-
 
   async checkHealth(): Promise<HealthCheckResult> {
     if (this.isPostgres && this.pool) {
@@ -160,6 +182,25 @@ export class DatabaseManager extends EventEmitter {
       }
     }
     return { status: 'healthy', provider: 'in-memory', count: this.inMemoryStore.size };
+  }
+
+  private normalizeRecord(row: any): MediaItem {
+    return {
+      id: row.id,
+      original_name: row.original_name,
+      storage_key: row.storage_key || row.file_path,
+      content_type: row.content_type || row.mime_type,
+      file_size: parseInt(String(row.file_size || row.size_bytes || 0), 10),
+      status: row.status as MediaStatus,
+      created_at: typeof row.created_at === 'object' ? row.created_at.toISOString() : String(row.created_at),
+      file_name: row.file_name,
+      mime_type: row.mime_type || row.content_type,
+      size_bytes: parseInt(String(row.size_bytes || row.file_size || 0), 10),
+      file_path: row.file_path,
+      thumbnail_url: row.thumbnail_url || null,
+      metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata || {},
+      updated_at: typeof row.updated_at === 'object' ? row.updated_at.toISOString() : String(row.updated_at),
+    };
   }
 }
 

@@ -165,6 +165,33 @@ async function runIntegrationTests() {
       console.log('  [PASS] GET /api/v1/media/:id (existing item) — 200 OK');
     }
 
+    // ── Media API: get processing status (Phase 3 & 5 endpoint) ────────
+    {
+      const res = await request('GET', `/api/media/${createdMediaId}/status`);
+      assert.strictEqual(res.status, 200, 'GET /api/media/:id/status must return 200');
+      assert.strictEqual(res.body.success, true);
+      assert.strictEqual(res.body.data.id, createdMediaId);
+      assert.ok(typeof res.body.data.progressPercent === 'number', 'progressPercent must be a number');
+      assert.ok(res.body.data.status, 'status must be returned');
+      console.log('  [PASS] GET /api/media/:id/status (processing status check) — 200 OK');
+    }
+
+    // ── Media API: download media endpoint ─────────────────
+    {
+      const res = await request('GET', `/api/media/${createdMediaId}/download`);
+      assert.strictEqual(res.status, 200, 'GET /api/media/:id/download must return 200');
+      assert.ok(res.raw.length > 0, 'Downloaded file must contain content');
+      console.log('  [PASS] GET /api/media/:id/download (download media) — 200 OK');
+    }
+
+    // ── Media API: check /api/media compatibility route ───
+    {
+      const res = await request('GET', '/api/media');
+      assert.strictEqual(res.status, 200, 'GET /api/media must return 200');
+      assert.strictEqual(res.body.success, true);
+      console.log('  [PASS] GET /api/media (roadmap route alias) — 200 OK');
+    }
+
     // ── Media API: reprocess media ─────────────────────────
     {
       const res = await request('POST', `/api/v1/media/${createdMediaId}/process`);

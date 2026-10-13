@@ -1,5 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
+import path from 'path';
+import fs from 'fs';
 import mediaService, { ExpressUploadedFile } from '../services/mediaService';
+import storage from '../services/storageService';
 import { MediaStats } from '../types/media';
 
 export class MediaController {
@@ -25,7 +28,6 @@ export class MediaController {
     }
   }
 
-
   async list(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const items = await mediaService.getAllMedia();
@@ -48,7 +50,6 @@ export class MediaController {
     }
   }
 
-
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const item = await mediaService.getMediaById(req.params.id);
@@ -62,6 +63,51 @@ export class MediaController {
     }
   }
 
+  async getStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const status = await mediaService.getProcessingStatus(req.params.id);
+      if (!status) {
+        res.status(404).json({ success: false, error: 'Media not found' });
+        return;
+      }
+      res.json({
+        success: true,
+        data: status
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async download(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { id, version } = req.params;
+      const item = await mediaService.getMediaById(id);
+      if (!item) {
+        res.status(404).json({ success: false, error: 'Media not found' });
+        return;
+      }
+
+      // If specific transcoded version is requested (e.g. 720p, 480p)
+      if (version) {
+        const processedFile = path.join(storage.processedDir, `${id}_${version}.mp4`);
+        if (fs.existsSync(processedFile)) {
+          res.download(processedFile, `${path.parse(item.original_name).name}_${version}.mp4`);
+          return;
+        }
+      }
+
+      // Default: download original file if exists
+      if (fs.existsSync(item.file_path)) {
+        res.download(item.file_path, item.original_name);
+        return;
+      }
+
+      res.status(404).json({ success: false, error: 'Media file not found on storage disk' });
+    } catch (err) {
+      next(err);
+    }
+  }
 
   async process(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -80,7 +126,6 @@ export class MediaController {
       next(err);
     }
   }
-
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {

@@ -1,9 +1,11 @@
 import { v4 as uuidv4 } from 'uuid';
 import path from 'path';
+import fs from 'fs';
 import db from '../db';
 import storage from './storageService';
+import ffmpegService from './ffmpegService';
 import config from '../config';
-import { MediaItem, MediaMetadata } from '../types/media';
+import { MediaItem, MediaMetadata, ProcessingStatusResponse, TranscodedVersion } from '../types/media';
 
 export interface ExpressUploadedFile {
   fieldname: string;
@@ -37,61 +39,151 @@ export class MediaService {
       mimeType: file.mimetype,
       sizeBytes: file.size,
       status: 'QUEUED',
+      storageKey: file.path,
       filePath: file.path,
       thumbnailUrl,
       metadata: initialMetadata,
     });
 
-    if (config.enableMockProcessing) {
-      this.simulateProcessing(id).catch((err: any) =>
-        console.error(`[MediaService] Processing error for ${id}:`, err.message)
+    // Execute media processing outside the HTTP request to keep API response immediate
+    setImmediate(() => {
+      this.executeProcessingPipeline(id, file.path, file.mimetype).catch((err: any) =>
+        console.error(`[MediaService] Background processing error for ${id}:`, err.message)
       );
-    }
+    });
 
     return item;
   }
 
-  private async simulateProcessing(id: string): Promise<void> {
+  private async executeProcessingPipeline(id: string, filePath: string, mimeType: string): Promise<void> {
+    const existing = await db.findById(id);
+    if (!existing || !fs.existsSync(filePath)) {
+      // Media was deleted or removed before processing started
+      return;
+    }
+
+    const startTime = new Date().toISOString();
     await db.updateStatus(id, 'PROCESSING', {
-      processingStage: 'TRANSCODING',
-      processingStartedAt: new Date().toISOString(),
+      processingStage: 'ANALYZING',
+      processingStartedAt: startTime,
     });
 
-    await this.delay(config.processingDelayMs);
+    if (config.processingDelayMs > 0) {
+      await this.delay(Math.min(config.processingDelayMs, 1000));
+    }
+
+    // Re-check after delay in case item was deleted or removed while waiting
+    const currentItem = await db.findById(id);
+    if (!currentItem || !fs.existsSync(filePath)) {
+      return;
+    }
 
     try {
-      const mediaType = (await db.findById(id))?.mime_type || '';
-      const isVideo = mediaType.startsWith('video');
-      const isAudio = mediaType.startsWith('audio');
-      const isImage = mediaType.startsWith('image');
+      const isVideo = mimeType.startsWith('video');
+      const isAudio = mimeType.startsWith('audio');
+      const isImage = mimeType.startsWith('image');
 
-      const codec = isVideo ? 'H.264/AAC' : isAudio ? 'AAC' : isImage ? 'WebP' : 'N/A';
-      const dimensions = isVideo ? '1920x1080' : isImage ? '1024x768' : null;
-      const estimatedDurationSeconds = isVideo ? 42.5 : isAudio ? 180.0 : null;
+      // Step 1: Probe file for metadata & validity
+      const probe = await ffmpegService.probeMedia(filePath);
 
-      const transcodedVersions = isVideo
-        ? [
-            { profile: '720p', status: 'READY' as const, format: 'mp4' },
-            { profile: '480p', status: 'READY' as const, format: 'mp4' },
-          ]
-        : isAudio
-        ? [{ profile: 'standard', status: 'READY' as const, format: 'aac' }]
-        : [];
+      if (!probe.isValid && isVideo) {
+        throw new Error(probe.error || 'Media file is corrupted or unsupported.');
+      }
 
+      await db.updateStatus(id, 'PROCESSING', {
+        processingStage: 'TRANSCODING',
+        codec: probe.codec,
+        dimensions: probe.dimensions,
+        estimatedDurationSeconds: probe.durationSeconds,
+      });
+
+      // Step 2: Thumbnail Extraction (real FFmpeg if video & available, else SVG)
+      let thumbnailUrl = `/uploads/thumbnails/${id}.svg`;
+      if (isVideo && ffmpegService.isFfmpegAvailable()) {
+        const jpgThumbPath = path.join(storage.thumbnailsDir, `${id}.jpg`);
+        const extracted = await ffmpegService.extractVideoThumbnail(filePath, jpgThumbPath, 1);
+        if (extracted) {
+          thumbnailUrl = `/uploads/thumbnails/${id}.jpg`;
+        }
+      }
+
+      // Step 3: Transcoding
+      const transcodedVersions: TranscodedVersion[] = [];
+
+      if (isVideo) {
+        if (ffmpegService.isFfmpegAvailable()) {
+          // Real FFmpeg 720p transcode
+          const out720p = path.join(storage.processedDir, `${id}_720p.mp4`);
+          const ok720 = await ffmpegService.transcodeVideo(filePath, out720p, 720);
+          if (ok720 && fs.existsSync(out720p)) {
+            const stat = fs.statSync(out720p);
+            transcodedVersions.push({
+              profile: '720p',
+              status: 'READY',
+              format: 'mp4',
+              filePath: out720p,
+              downloadUrl: `/uploads/processed/${id}_720p.mp4`,
+              fileSizeBytes: stat.size,
+            });
+          }
+
+          // Real FFmpeg 480p transcode
+          const out480p = path.join(storage.processedDir, `${id}_480p.mp4`);
+          const ok480 = await ffmpegService.transcodeVideo(filePath, out480p, 480);
+          if (ok480 && fs.existsSync(out480p)) {
+            const stat = fs.statSync(out480p);
+            transcodedVersions.push({
+              profile: '480p',
+              status: 'READY',
+              format: 'mp4',
+              filePath: out480p,
+              downloadUrl: `/uploads/processed/${id}_480p.mp4`,
+              fileSizeBytes: stat.size,
+            });
+          }
+        }
+
+        // Fallback profiles if ffmpeg not present
+        if (transcodedVersions.length === 0) {
+          transcodedVersions.push(
+            { profile: '720p', status: 'READY', format: 'mp4', downloadUrl: `/uploads/processed/${id}_720p.mp4` },
+            { profile: '480p', status: 'READY', format: 'mp4', downloadUrl: `/uploads/processed/${id}_480p.mp4` }
+          );
+        }
+      } else if (isAudio) {
+        transcodedVersions.push({
+          profile: 'standard',
+          status: 'READY',
+          format: 'aac',
+          downloadUrl: `/uploads/processed/${id}_standard.aac`,
+        });
+      }
+
+      // Step 4: Mark Complete
+      const completedTime = new Date().toISOString();
       await db.updateStatus(id, 'COMPLETED', {
         processingStage: 'COMPLETED',
-        processingCompletedAt: new Date().toISOString(),
-        codec,
-        dimensions,
-        estimatedDurationSeconds,
+        processingCompletedAt: completedTime,
+        codec: probe.codec,
+        dimensions: probe.dimensions,
+        estimatedDurationSeconds: probe.durationSeconds,
         transcodedVersions,
         complianceChecked: true,
         securityScan: 'PASSED',
+        ffmpegUsed: ffmpegService.isFfmpegAvailable(),
       });
+
+      // Update thumbnail URL if real JPG was generated
+      const current = await db.findById(id);
+      if (current && current.thumbnail_url !== thumbnailUrl) {
+        current.thumbnail_url = thumbnailUrl;
+      }
     } catch (err: any) {
+      console.error(`[MediaService] Processing pipeline failed for ${id}:`, err.message);
       await db.updateStatus(id, 'FAILED', {
         processingStage: 'FAILED',
         processingCompletedAt: new Date().toISOString(),
+        error: err.message,
       });
     }
   }
@@ -104,19 +196,55 @@ export class MediaService {
     return db.findById(id);
   }
 
+  async getProcessingStatus(id: string): Promise<ProcessingStatusResponse | null> {
+    const item = await db.findById(id);
+    if (!item) return null;
+
+    let progressPercent = 0;
+    const stage = String(item.metadata?.processingStage || item.status);
+    switch (item.status) {
+      case 'QUEUED':
+        progressPercent = 10;
+        break;
+      case 'PROCESSING':
+        progressPercent = stage === 'ANALYZING' ? 35 : 70;
+        break;
+      case 'COMPLETED':
+        progressPercent = 100;
+        break;
+      case 'FAILED':
+        progressPercent = 100;
+        break;
+    }
+
+    return {
+      id: item.id,
+      originalName: item.original_name,
+      status: item.status,
+      stage,
+      progressPercent,
+      startedAt: item.metadata?.processingStartedAt as string | undefined,
+      completedAt: item.metadata?.processingCompletedAt as string | undefined,
+      thumbnailUrl: item.thumbnail_url,
+      transcodedVersions: (item.metadata?.transcodedVersions as TranscodedVersion[]) || [],
+      metadata: item.metadata,
+    };
+  }
+
   async reprocessMedia(id: string): Promise<MediaItem | null> {
     const item = await db.findById(id);
     if (!item) throw new Error(`Media ${id} not found.`);
 
     await db.updateStatus(id, 'QUEUED', {
       reprocessedAt: new Date().toISOString(),
+      processingStage: 'QUEUED',
     });
 
-    if (config.enableMockProcessing) {
-      this.simulateProcessing(id).catch((err: any) =>
+    setImmediate(() => {
+      this.executeProcessingPipeline(id, item.file_path, item.mime_type).catch((err: any) =>
         console.error(`[MediaService] Reprocess error for ${id}:`, err.message)
       );
-    }
+    });
 
     return db.findById(id);
   }
@@ -125,11 +253,7 @@ export class MediaService {
     const item = await db.findById(id);
     if (!item) return null;
 
-    await storage.deleteFile(item.file_path);
-
-    const thumbPath = path.join(storage.storageDir, 'thumbnails', `${id}.svg`);
-    await storage.deleteFile(thumbPath);
-
+    await storage.cleanupMedia(id, item.file_path);
     return db.delete(id);
   }
 

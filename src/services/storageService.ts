@@ -5,21 +5,32 @@ import config from '../config';
 
 export class StorageService {
   public storageDir: string;
+  public originalsDir: string;
+  public processedDir: string;
+  public thumbnailsDir: string;
 
   constructor() {
-    this.storageDir = config.storageDir;
-    this.ensureDirectory(this.storageDir);
+    this.storageDir = path.resolve(config.storageDir);
+    this.originalsDir = path.join(this.storageDir, 'originals');
+    this.processedDir = path.join(this.storageDir, 'processed');
+    this.thumbnailsDir = path.join(this.storageDir, 'thumbnails');
+    this.initDirectories();
   }
 
-  ensureDirectory(dir: string): void {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+  public initDirectories(): void {
+    [this.storageDir, this.originalsDir, this.processedDir, this.thumbnailsDir].forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    });
   }
 
   calculateChecksum(filePath: string): Promise<string> {
     return new Promise((resolve, reject) => {
       try {
+        if (!fs.existsSync(filePath)) {
+          return resolve('');
+        }
         const hash = crypto.createHash('sha256');
         const stream = fs.createReadStream(filePath);
         stream.on('data', chunk => hash.update(chunk));
@@ -30,7 +41,6 @@ export class StorageService {
       }
     });
   }
-
 
   generateThumbnailSvg(fileName: string, mimeType: string): string {
     const ext = path.extname(fileName).toUpperCase().replace('.', '') || 'FILE';
@@ -55,29 +65,71 @@ export class StorageService {
     </svg>`;
   }
 
-  async saveThumbnail(id: string, fileName: string, mimeType: string): Promise<string> {
-    const thumbDir = path.join(this.storageDir, 'thumbnails');
-    this.ensureDirectory(thumbDir);
-    const thumbPath = path.join(thumbDir, `${id}.svg`);
+  async saveThumbnail(id: string, fileName: string, mimeType: string, imageBuffer?: Buffer): Promise<string> {
+    this.initDirectories();
+    if (imageBuffer) {
+      const thumbPath = path.join(this.thumbnailsDir, `${id}.jpg`);
+      await fs.promises.writeFile(thumbPath, imageBuffer);
+      return `/uploads/thumbnails/${id}.jpg`;
+    }
+
+    const thumbPath = path.join(this.thumbnailsDir, `${id}.svg`);
     const svgContent = this.generateThumbnailSvg(fileName, mimeType);
     await fs.promises.writeFile(thumbPath, svgContent, 'utf-8');
     return `/uploads/thumbnails/${id}.svg`;
   }
 
+  async saveProcessedOutput(id: string, profile: string, ext: string, content: Buffer | string): Promise<string> {
+    this.initDirectories();
+    const destPath = path.join(this.processedDir, `${id}_${profile}.${ext}`);
+    if (typeof content === 'string') {
+      if (fs.existsSync(content)) {
+        await fs.promises.copyFile(content, destPath);
+      }
+    } else {
+      await fs.promises.writeFile(destPath, content);
+    }
+    return destPath;
+  }
 
-  async deleteFile(filePath: string): Promise<void> {
+  getProcessedUrl(id: string, profile: string, ext: string): string {
+    return `/uploads/processed/${id}_${profile}.${ext}`;
+  }
+
+  async deleteFile(filePathOrKey: string): Promise<void> {
     try {
-      if (fs.existsSync(filePath)) {
-        await fs.promises.unlink(filePath);
+      if (!filePathOrKey) return;
+      const fullPath = path.isAbsolute(filePathOrKey)
+        ? filePathOrKey
+        : path.join(this.storageDir, filePathOrKey);
+
+      if (fs.existsSync(fullPath)) {
+        await fs.promises.unlink(fullPath);
       }
     } catch (err: any) {
-      console.error(`[Storage] Failed to delete ${filePath}:`, err.message);
+      console.error(`[Storage] Failed to delete ${filePathOrKey}:`, err.message);
     }
   }
 
+  async cleanupMedia(id: string, originalPath: string): Promise<void> {
+    await this.deleteFile(originalPath);
+
+    // Delete thumbnails (svg and jpg)
+    await this.deleteFile(path.join(this.thumbnailsDir, `${id}.svg`));
+    await this.deleteFile(path.join(this.thumbnailsDir, `${id}.jpg`));
+
+    // Delete processed versions
+    const files = await fs.promises.readdir(this.processedDir).catch(() => []);
+    for (const f of files) {
+      if (f.startsWith(`${id}_`)) {
+        await this.deleteFile(path.join(this.processedDir, f));
+      }
+    }
+  }
 
   isWritable(): boolean {
     try {
+      this.initDirectories();
       const testFile = path.join(this.storageDir, '.write-test');
       fs.writeFileSync(testFile, 'ok');
       fs.unlinkSync(testFile);

@@ -1,147 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MediaForge &#8212; Cloud-Native Media Processing Platform</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-</head>
-<body>
-  <div class="app-layout">
-    <header class="app-header">
-      <div class="brand">
-        <div class="logo-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-          </svg>
-        </div>
-        <div>
-          <h1>MediaForge</h1>
-          <p class="subtitle">Cloud-Native Media Platform &bull; Kubernetes DevSecOps</p>
-        </div>
-      </div>
-      <div class="header-badges">
-        <span class="badge badge-ts">TypeScript 5</span>
-        <span class="badge badge-k8s">Kubernetes Ready</span>
-        <span class="badge badge-devsecops">DevSecOps</span>
-        <div id="healthPill" class="health-pill">
-          <span class="status-dot"></span>
-          <span id="healthText">Checking...</span>
-        </div>
-      </div>
-    </header>
-
-
-    <main class="main-content">
-      <!-- Metrics Overview -->
-      <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Media</div>
-          <div class="stat-value" id="statTotal">0</div>
-          <div class="stat-desc">Ingested assets</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">In Queue</div>
-          <div class="stat-value text-amber" id="statQueued">0</div>
-          <div class="stat-desc">Awaiting transcode</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Processing</div>
-          <div class="stat-value text-cyan" id="statProcessing">0</div>
-          <div class="stat-desc">Active pipeline</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Completed</div>
-          <div class="stat-value text-emerald" id="statCompleted">0</div>
-          <div class="stat-desc">Ready for distribution</div>
-        </div>
-      </section>
-
-      <!-- Upload Section -->
-      <section class="upload-section">
-        <div class="dropzone" id="dropzone">
-          <div class="drop-icon">
-            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-          </div>
-          <h3>Upload Media Assets</h3>
-          <p>Drag and drop your video, audio, image, or document here, or browse files</p>
-          <div class="formats-supported">
-            <span>MP4</span><span>WEBM</span><span>PNG</span><span>JPG</span><span>WEBP</span><span>MP3</span><span>WAV</span><span>PDF</span>
-          </div>
-          <input type="file" id="fileInput" class="file-input" />
-          <button type="button" class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Select File</button>
-          <div id="uploadProgress" class="upload-progress-container hidden">
-            <div class="progress-bar-bg">
-              <div id="progressBar" class="progress-bar-fill"></div>
-            </div>
-            <span id="progressLabel" class="progress-label">Uploading...</span>
-          </div>
-        </div>
-      </section>
-
-
-      <!-- Media Catalog Header -->
-      <section class="catalog-section">
-        <div class="catalog-toolbar">
-          <div class="catalog-title">
-            <h2>Media Assets Library</h2>
-            <span id="catalogCount" class="count-chip">0 items</span>
-          </div>
-          <div class="catalog-controls">
-            <div class="filter-tabs">
-              <button class="filter-btn active" data-filter="all">All</button>
-              <button class="filter-btn" data-filter="video">Videos</button>
-              <button class="filter-btn" data-filter="image">Images</button>
-              <button class="filter-btn" data-filter="audio">Audio</button>
-            </div>
-            <button class="btn btn-secondary btn-sm" id="btnRefresh" title="Refresh list">⟳ Refresh</button>
-          </div>
-        </div>
-
-        <!-- Grid Container -->
-        <div class="media-grid" id="mediaGrid">
-          <!-- Populated by app.js -->
-        </div>
-        <div id="emptyState" class="empty-state hidden">
-          <div class="empty-icon">📈</div>
-          <h3>No media assets yet</h3>
-          <p>Upload a file above to trigger the cloud-native processing pipeline.</p>
-        </div>
-      </section>
-    </main>
-
-
-    <!-- Metadata Details Modal -->
-    <div id="metadataModal" class="modal-backdrop hidden">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3 id="modalTitle">Media Metadata & Pipeline Details</h3>
-          <button class="close-btn" id="modalClose">&atimes;</button>
-        </div>
-        <div class="modal-body">
-          <div class="modal-meta-grid" id="modalMetaGrid"></div>
-          <h4>Full Metadata JSON</h4>
-          <pre id="modalJson" class="code-block"></pre>
-        </div>
-      </div>
-    </div>
-
-    <footer class="app-footer">
-      <p>MediaForge &bull; Kubernetes DevSecOps Media Platform &bull; Built with TypeScript & Node.js</p>
-      <div class="footer-links">
-        <a href="/healthz" target="_blank">Liveness Probe (/healthz)</a>
-        <a href="/readyz" target="_blank">Readiness Probe (/readyz)</a>
-        <a href="/metrics" target="_blank">Prometheus Metrics (/metrics)</a>
-      </div>
-    </footer>
-  </div>
-  <script src="app.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediaForge — Cloud-Native Media Processing Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-CvjWnjE3.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-o8szOxgU.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>
