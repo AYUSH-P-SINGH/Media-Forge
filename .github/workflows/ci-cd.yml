@@ -18,6 +18,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ghcr.io/${{ github.repository }}
+
 jobs:
   # =========================================================================
   # 1. Automated Tests & Quality Assurance
@@ -206,14 +210,17 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Compute Lowercase Image Name
+        id: image_name
         run: |
-          echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_NAME=${IMAGE}" >> $GITHUB_ENV
+          echo "image=${IMAGE}" >> $GITHUB_OUTPUT
 
       - name: Extract Docker metadata (Tags & Labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.IMAGE_NAME }}
+          images: ${{ steps.image_name.outputs.image }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -369,7 +376,7 @@ jobs:
           echo "| **Vulnerability Scanning** | Aqua Trivy | ✅ Passed | Filesystem and Container image scanned (HIGH/CRITICAL) |" >> $GITHUB_STEP_SUMMARY
           echo "| **SBOM Generation** | Syft | ✅ Passed | CycloneDX & SPDX JSON artifacts generated |" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.check_publish.outputs.should_publish }}" == "true" ]; then
-            echo "| **Container Registry** | GHCR | 📦 Published | \`${{ env.IMAGE_NAME }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| **Container Registry** | GHCR | 📦 Published | \`${IMAGE_NAME}\` |" >> $GITHUB_STEP_SUMMARY
             echo "| **Cryptographic Signing** | Sigstore Cosign | 🔐 Signed | Keyless OIDC signature and SBOM attestation verified |" >> $GITHUB_STEP_SUMMARY
           else
             echo "| **Container Registry** | GHCR | ⏭️ Skipped | PR validation build (push deferred until merge) |" >> $GITHUB_STEP_SUMMARY
@@ -379,15 +386,15 @@ jobs:
           echo "### 📦 Image Verification Command" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "# Pull published container" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${IMAGE_NAME}:latest" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Verify image signature with Cosign" >> $GITHUB_STEP_SUMMARY
-          echo "cosign verify ${{ env.IMAGE_NAME }}:latest \\" >> $GITHUB_STEP_SUMMARY
+          echo "cosign verify ${IMAGE_NAME}:latest \\" >> $GITHUB_STEP_SUMMARY
           echo "  --certificate-identity-regexp '(?i)^https://github.com/${{ github.repository }}/' \\" >> $GITHUB_STEP_SUMMARY
           echo "  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "# Verify SBOM attestation with Cosign" >> $GITHUB_STEP_SUMMARY
-          echo "cosign verify-attestation --type spdxjson ${{ env.IMAGE_NAME }}:latest \\" >> $GITHUB_STEP_SUMMARY
+          echo "cosign verify-attestation --type spdxjson ${IMAGE_NAME}:latest \\" >> $GITHUB_STEP_SUMMARY
           echo "  --certificate-identity-regexp '(?i)^https://github.com/${{ github.repository }}/' \\" >> $GITHUB_STEP_SUMMARY
           echo "  --certificate-oidc-issuer 'https://token.actions.githubusercontent.com'" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
