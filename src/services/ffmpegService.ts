@@ -71,13 +71,16 @@ export class FfmpegService {
       };
     }
 
+    const safePath = path.resolve(filePath);
+
     return new Promise((resolve) => {
       const args = [
         '-v', 'quiet',
         '-print_format', 'json',
         '-show_format',
         '-show_streams',
-        filePath
+        '--',
+        safePath
       ];
 
       try {
@@ -168,20 +171,25 @@ export class FfmpegService {
       return false;
     }
 
+    const safeInput = path.resolve(inputPath);
+    const safeOutput = path.resolve(outputPath);
+    const safeSeek = Number.isFinite(seekSec) && seekSec >= 0 ? Math.floor(seekSec) : 1;
+
     return new Promise((resolve) => {
       const args = [
         '-y',
-        '-ss', String(seekSec),
-        '-i', inputPath,
+        '-ss', String(safeSeek),
+        '-i', safeInput,
         '-vframes', '1',
         '-q:v', '2',
-        outputPath
+        '--',
+        safeOutput
       ];
 
       try {
         const proc = spawn('ffmpeg', args, { timeout: 15000 });
         proc.on('close', (code) => {
-          resolve(code === 0 && fs.existsSync(outputPath));
+          resolve(code === 0 && fs.existsSync(safeOutput));
         });
         proc.on('error', () => resolve(false));
       } catch {
@@ -195,23 +203,30 @@ export class FfmpegService {
       return false;
     }
 
+    const safeInput = path.resolve(inputPath);
+    const safeOutput = path.resolve(outputPath);
+    const safeHeight = Number.isInteger(targetHeight) && targetHeight > 0 && targetHeight <= 4320
+      ? targetHeight
+      : 720;
+
     return new Promise((resolve) => {
       const args = [
         '-y',
-        '-i', inputPath,
-        '-vf', `scale=-2:${targetHeight}`,
+        '-i', safeInput,
+        '-vf', `scale=-2:${safeHeight}`,
         '-c:v', 'libx264',
         '-crf', '24',
         '-preset', 'fast',
         '-c:a', 'aac',
         '-b:a', '128k',
-        outputPath
+        '--',
+        safeOutput
       ];
 
       try {
         const proc = spawn('ffmpeg', args, { timeout: 60000 });
         proc.on('close', (code) => {
-          resolve(code === 0 && fs.existsSync(outputPath));
+          resolve(code === 0 && fs.existsSync(safeOutput));
         });
         proc.on('error', () => resolve(false));
       } catch {

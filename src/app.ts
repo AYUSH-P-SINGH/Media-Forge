@@ -15,6 +15,16 @@ export function createApp(): Application {
     console.warn('[App] DB init warning:', err.message);
   });
 
+  // Security & Hardening
+  app.disable('x-powered-by');
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+
   // Core Middlewares
   app.use(cors());
   app.use(express.json());
@@ -22,8 +32,20 @@ export function createApp(): Application {
   app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
   // Static files for Web UI and Uploads
-  app.use(express.static(path.join(__dirname, '../public')));
-  app.use('/uploads', express.static(config.storageDir));
+  app.use(express.static(path.join(__dirname, '../public'), {
+    dotfiles: 'ignore',
+    index: 'index.html'
+  }));
+
+  // Uploads served with nosniff and sandboxed CSP to eliminate Stored XSS vectors
+  app.use('/uploads', express.static(config.storageDir, {
+    dotfiles: 'deny',
+    index: false,
+    setHeaders: (res) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+    }
+  }));
 
   // Health and Observability
   app.use('/', healthRoutes);

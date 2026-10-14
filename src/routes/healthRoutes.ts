@@ -25,7 +25,15 @@ router.get('/healthz', (req: Request, res: Response) => {
 router.get('/readyz', async (req: Request, res: Response) => {
   const dbHealth = await db.checkHealth();
   const storageOk = storage.isWritable();
-  const isReady = dbHealth.status !== 'unhealthy' && storageOk;
+
+  // If a database URL is configured, readiness requires that PostgreSQL is active and healthy.
+  // Resilient in-memory fallback is permitted in local dev without DATABASE_URL,
+  // but must not mask a broken PostgreSQL connection in configured/production deployments.
+  const isDbConfigured = Boolean(process.env.DATABASE_URL && process.env.DATABASE_URL.trim() !== '');
+  const dbReady = isDbConfigured
+    ? (db.isPostgres && dbHealth.status === 'healthy')
+    : (dbHealth.status !== 'unhealthy');
+  const isReady = dbReady && storageOk;
 
   res.status(isReady ? 200 : 503).json({
     status: isReady ? 'ready' : 'not_ready',

@@ -9,7 +9,7 @@ function request(
   path: string,
   body?: Buffer | string,
   headers?: Record<string, string>
-): Promise<{ status: number; body: any; raw: string }> {
+): Promise<{ status: number; body: any; raw: string; headers: http.IncomingHttpHeaders }> {
   return new Promise((resolve, reject) => {
     const options: http.RequestOptions = {
       hostname: 'localhost',
@@ -29,7 +29,7 @@ function request(
         } catch {
           parsed = data;
         }
-        resolve({ status: res.statusCode || 0, body: parsed, raw: data });
+        resolve({ status: res.statusCode || 0, body: parsed, raw: data, headers: res.headers });
       });
     });
 
@@ -255,6 +255,35 @@ async function runIntegrationTests() {
         'Root must serve the frontend HTML'
       );
       console.log('  [PASS] GET / — static frontend served');
+    }
+
+    // ── Security & Vulnerability Defense Tests ───────────────
+    {
+      const res = await request('GET', '/healthz');
+      assert.strictEqual(res.headers['x-content-type-options'], 'nosniff', 'Must include X-Content-Type-Options: nosniff');
+      assert.strictEqual(res.headers['x-frame-options'], 'SAMEORIGIN', 'Must include X-Frame-Options: SAMEORIGIN');
+      assert.strictEqual(res.headers['x-powered-by'], undefined, 'Must not leak X-Powered-By header');
+      console.log('  [PASS] Security headers (nosniff, SAMEORIGIN, no X-Powered-By) verified');
+    }
+
+    {
+      // Path traversal rejection in media download
+      const res = await request('GET', '/api/media/../../etc/passwd/download');
+      assert.ok(res.status === 400 || res.status === 404, 'Path traversal must be safely rejected');
+      console.log('  [PASS] Path traversal attempt in media routes safely rejected');
+    }
+
+    {
+      // Prohibited extension with spoofed valid MIME type
+      const fakePayload = Buffer.from('binary-payload');
+      const { body, boundary } = buildMultipartBody('file', 'malicious.exe', 'video/mp4', fakePayload);
+      const res = await request('POST', '/api/v1/media/upload', body, {
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': String(body.length),
+      });
+      assert.strictEqual(res.status, 400, 'Prohibited file extension must return 400');
+      assert.strictEqual(res.body.success, false);
+      console.log('  [PASS] Spoofed MIME type with prohibited extension (.exe) safely blocked (400)');
     }
 
     console.log('\n========================================');

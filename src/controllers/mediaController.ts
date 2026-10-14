@@ -52,7 +52,12 @@ export class MediaController {
 
   async getById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await mediaService.getMediaById(req.params.id);
+      const { id } = req.params;
+      if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+        res.status(400).json({ success: false, error: 'Invalid media ID format' });
+        return;
+      }
+      const item = await mediaService.getMediaById(id);
       if (!item) {
         res.status(404).json({ success: false, error: 'Media not found' });
         return;
@@ -65,7 +70,12 @@ export class MediaController {
 
   async getStatus(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const status = await mediaService.getProcessingStatus(req.params.id);
+      const { id } = req.params;
+      if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+        res.status(400).json({ success: false, error: 'Invalid media ID format' });
+        return;
+      }
+      const status = await mediaService.getProcessingStatus(id);
       if (!status) {
         res.status(404).json({ success: false, error: 'Media not found' });
         return;
@@ -82,6 +92,19 @@ export class MediaController {
   async download(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { id, version } = req.params;
+
+      // Validate ID format to prevent directory traversal
+      if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+        res.status(400).json({ success: false, error: 'Invalid media ID format' });
+        return;
+      }
+
+      // Validate version format if provided
+      if (version && !/^[a-zA-Z0-9_-]+$/.test(version)) {
+        res.status(400).json({ success: false, error: 'Invalid version identifier' });
+        return;
+      }
+
       const item = await mediaService.getMediaById(id);
       if (!item) {
         res.status(404).json({ success: false, error: 'Media not found' });
@@ -90,16 +113,30 @@ export class MediaController {
 
       // If specific transcoded version is requested (e.g. 720p, 480p)
       if (version) {
-        const processedFile = path.join(storage.processedDir, `${id}_${version}.mp4`);
+        const processedFile = path.resolve(storage.processedDir, `${id}_${version}.mp4`);
+        // Verify path stays within processedDir
+        if (!processedFile.startsWith(path.resolve(storage.processedDir))) {
+          res.status(403).json({ success: false, error: 'Access denied: invalid storage path' });
+          return;
+        }
+
         if (fs.existsSync(processedFile)) {
-          res.download(processedFile, `${path.parse(item.original_name).name}_${version}.mp4`);
+          const downloadName = `${path.parse(item.original_name).name}_${version}.mp4`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+          res.download(processedFile, downloadName);
           return;
         }
       }
 
       // Default: download original file if exists
-      if (fs.existsSync(item.file_path)) {
-        res.download(item.file_path, item.original_name);
+      const originalFile = path.resolve(item.file_path);
+      if (!originalFile.startsWith(path.resolve(storage.storageDir))) {
+        res.status(403).json({ success: false, error: 'Access denied: invalid file path' });
+        return;
+      }
+
+      if (fs.existsSync(originalFile)) {
+        const safeOriginalName = path.basename(item.original_name).replace(/[^a-zA-Z0-9_.-]/g, '_');
+        res.download(originalFile, safeOriginalName);
         return;
       }
 
@@ -111,15 +148,20 @@ export class MediaController {
 
   async process(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const item = await mediaService.getMediaById(req.params.id);
+      const { id } = req.params;
+      if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+        res.status(400).json({ success: false, error: 'Invalid media ID format' });
+        return;
+      }
+      const item = await mediaService.getMediaById(id);
       if (!item) {
         res.status(404).json({ success: false, error: 'Media not found' });
         return;
       }
-      const result = await mediaService.reprocessMedia(req.params.id);
+      const result = await mediaService.reprocessMedia(id);
       res.json({
         success: true,
-        message: `Processing re-triggered for media ${req.params.id}`,
+        message: `Processing re-triggered for media ${id}`,
         data: result
       });
     } catch (err) {
@@ -129,14 +171,19 @@ export class MediaController {
 
   async delete(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await mediaService.deleteMedia(req.params.id);
+      const { id } = req.params;
+      if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+        res.status(400).json({ success: false, error: 'Invalid media ID format' });
+        return;
+      }
+      const result = await mediaService.deleteMedia(id);
       if (!result) {
         res.status(404).json({ success: false, error: 'Media not found' });
         return;
       }
       res.json({
         success: true,
-        message: `Media ${req.params.id} removed successfully.`
+        message: `Media ${id} removed successfully.`
       });
     } catch (err) {
       next(err);

@@ -7,6 +7,12 @@ import mediaController from '../controllers/mediaController';
 
 const router = Router();
 
+const SAFE_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.webp', '.gif',
+  '.mp4', '.webm', '.mov', '.avi', '.mkv',
+  '.mp3', '.wav', '.ogg', '.pdf'
+]);
+
 const diskStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     storage.initDirectories();
@@ -14,7 +20,7 @@ const diskStorage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Generate safe unique filename
-    const safeBaseName = path.parse(file.originalname).name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const safeBaseName = path.parse(file.originalname).name.replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64) || 'media';
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     const ext = path.extname(file.originalname).toLowerCase();
     cb(null, `${safeBaseName}-${uniqueSuffix}${ext}`);
@@ -22,6 +28,12 @@ const diskStorage = multer.diskStorage({
 });
 
 const fileFilter = (req: Express.Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (!SAFE_EXTENSIONS.has(ext)) {
+    cb(new Error(`File extension '${ext || "none"}' is not permitted.`));
+    return;
+  }
+
   if (config.allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
