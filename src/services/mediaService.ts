@@ -171,13 +171,7 @@ export class MediaService {
         complianceChecked: true,
         securityScan: 'PASSED',
         ffmpegUsed: ffmpegService.isFfmpegAvailable(),
-      });
-
-      // Update thumbnail URL if real JPG was generated
-      const current = await db.findById(id);
-      if (current && current.thumbnail_url !== thumbnailUrl) {
-        current.thumbnail_url = thumbnailUrl;
-      }
+      }, thumbnailUrl);
     } catch (err: any) {
       console.error(`[MediaService] Processing pipeline failed for ${id}:`, err.message);
       await db.updateStatus(id, 'FAILED', {

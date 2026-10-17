@@ -139,22 +139,40 @@ export class DatabaseManager extends EventEmitter {
     return this.inMemoryStore.get(id) || null;
   }
 
-  async updateStatus(id: string, status: MediaStatus, metadata: Partial<MediaMetadata> = {}): Promise<MediaItem | null> {
+  async updateStatus(
+    id: string,
+    status: MediaStatus,
+    metadata: Partial<MediaMetadata> = {},
+    thumbnailUrl?: string
+  ): Promise<MediaItem | null> {
     const now = new Date().toISOString();
     if (this.isPostgres && this.pool) {
-      const sql = `
-        UPDATE media_items
-        SET status = $1, metadata = metadata || $2::jsonb, updated_at = $3
-        WHERE id = $4
-        RETURNING *;
-      `;
-      const res: QueryResult<any> = await this.pool.query(sql, [status, JSON.stringify(metadata), now, id]);
+      const sql = thumbnailUrl
+        ? `
+          UPDATE media_items
+          SET status = $1, metadata = metadata || $2::jsonb, thumbnail_url = $3, updated_at = $4
+          WHERE id = $5
+          RETURNING *;
+        `
+        : `
+          UPDATE media_items
+          SET status = $1, metadata = metadata || $2::jsonb, updated_at = $3
+          WHERE id = $4
+          RETURNING *;
+        `;
+      const params = thumbnailUrl
+        ? [status, JSON.stringify(metadata), thumbnailUrl, now, id]
+        : [status, JSON.stringify(metadata), now, id];
+      const res: QueryResult<any> = await this.pool.query(sql, params);
       return res.rows[0] ? this.normalizeRecord(res.rows[0]) : null;
     }
     const item = this.inMemoryStore.get(id);
     if (!item) return null;
     item.status = status;
     item.metadata = { ...item.metadata, ...metadata };
+    if (thumbnailUrl) {
+      item.thumbnail_url = thumbnailUrl;
+    }
     item.updated_at = now;
     return { ...item };
   }

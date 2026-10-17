@@ -113,7 +113,13 @@ export class MediaController {
 
       // If specific transcoded version is requested (e.g. 720p, 480p)
       if (version) {
-        const processedFile = path.resolve(storage.processedDir, `${id}_${version}.mp4`);
+        const transcodes = (item.metadata?.transcodedVersions as any[]) || [];
+        const match = transcodes.find((t: any) => t.profile && t.profile.toLowerCase() === version.toLowerCase());
+        const ext = match?.format ? `.${match.format}` : '.mp4';
+        const processedFile = match?.filePath
+          ? path.resolve(match.filePath)
+          : path.resolve(storage.processedDir, `${id}_${version}${ext}`);
+
         // Verify path stays within processedDir
         if (!processedFile.startsWith(path.resolve(storage.processedDir))) {
           res.status(403).json({ success: false, error: 'Access denied: invalid storage path' });
@@ -121,10 +127,17 @@ export class MediaController {
         }
 
         if (fs.existsSync(processedFile)) {
-          const downloadName = `${path.parse(item.original_name).name}_${version}.mp4`.replace(/[^a-zA-Z0-9_.-]/g, '_');
+          const extName = path.extname(processedFile) || ext;
+          const downloadName = `${path.parse(item.original_name).name}_${version}${extName}`.replace(/[^a-zA-Z0-9_.-]/g, '_');
           res.download(processedFile, downloadName);
           return;
         }
+
+        res.status(404).json({
+          success: false,
+          error: `Transcoded version '${version}' not found for media asset`
+        });
+        return;
       }
 
       // Default: download original file if exists

@@ -184,6 +184,14 @@ async function runIntegrationTests() {
       console.log('  [PASS] GET /api/media/:id/download (download media) — 200 OK');
     }
 
+    // ── Media API: download non-existent transcoded version ────
+    {
+      const res = await request('GET', `/api/media/${createdMediaId}/download/nonexistent`);
+      assert.strictEqual(res.status, 404, 'Download non-existent version must return 404');
+      assert.strictEqual(res.body.success, false);
+      console.log('  [PASS] GET /api/media/:id/download/:version (missing version) — 404 error');
+    }
+
     // ── Media API: check /api/media compatibility route ───
     {
       const res = await request('GET', '/api/media');
